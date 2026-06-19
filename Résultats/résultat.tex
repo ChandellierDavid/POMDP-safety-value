@@ -10,9 +10,15 @@
 
 \maketitle
 
+\section{ce qui fait que l'algo marche}
+
+    Dans un POMDP, almost sure safe $=$ sure safe. \newline
+
+    Sure safe dans un POMDP equivaut à strategie gagnante pour J1 dans le graphe à 2 joueurs ou J1 choisit l'action et J2 l'observation. \newline 
+
 \section{Taille de l'ensemble des beliefs gagnants maximaux}
 
-    Il peut être de taille exponentiel en la taille du POMDP ($\frac{2^{|Q|}}{|Q|}$ avec deux actions et une observation). \newline
+    Il peut être de taille exponentielle en la taille du POMDP ($\frac{2^{|Q|}}{|Q|}$ avec deux actions et une observation). \newline
 
     Exemple : \newline
 
@@ -26,7 +32,7 @@
     Une borne supérieure du nombre de tour de boucle est en $O(log(\frac{1}{\epsilon})*(\frac{1}{p})^{2^{|Q|}})$,
     où p est la plus petite probabilité apparaissant dans le POMDP. \newline
 
-    Elle est atteinte par un POMDP que Xavier a détailler (insérer une image et écrire la preuve).
+    Elle est atteinte par un POMDP que Xavier a détaillé (insérer une image et écrire la preuve).
 
 \section{optimisation et changement de l'algorithme}
 
@@ -37,12 +43,12 @@
     Avec une precision de $\mu = 1/k$ avec $k = \frac{log(1/\epsilon)*(1/p)**(2**|Q|)}{\epsilon*|Q|}$ on borne l'erreur de calcul de la safety value par $\epsilon$.
     Donc en faisant le calcul de la safety value sur $M(P)^{\epsilon/2}$ ça marche. \newline
 
-    Et on a une complexité double exponentielle en |Q| valant $O*(\frac{log(1/epsilon)^{|Q|}*(1/p)^{((2^{|Q|})*(|Q|+1))}}{\epsilon})$.
+    Et on a une complexité double exponentielle en $|Q|$ valant $O^{*}(\frac{log(1/epsilon)^{|Q|}*(1/p)^{((2^{|Q|})*(|Q|+1))}}{\epsilon})$.
 
 \section{borne inférieure de complexité}
 
     On peut montrer sans trop de difficulté que c'est exptime dur en réduisant au calcul des états almost-sure
-    (si on a une safety value >= $1-1/(p*(2^{|Q|})$) sur un belief uniforme alors son support est almost-sure winning, preuve pas faite, c'est une intuition). \newline
+    (si on a une safety value $>= 1-1/(|Q|*p^{(2^{|Q|})})$ sur un belief uniforme alors son support est almost-sure winning). \newline
 
     On voudrait montrer que c'est 2-exptime dur (complet car on est dedans).
 
