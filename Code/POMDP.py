@@ -1,3 +1,5 @@
+from fractions import Fraction
+
 class POMDP:
     def __init__(self,n,init,lose,losing_obs,k,p,Delta):
         self.init = init                    # état initial
@@ -76,7 +78,7 @@ class POMDP:
                 Up[u].append(i)                                                             # les sommets de u n'ont pas forcément degré entrant 1
         return(Up,Vp)
     
-    def losing_belief(self):                                                                 # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
+    def losing_belief(self):                                                                # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
         nb_belief = 2**self.nb_state
         (U,V) = self.belief_graph()
         (Up,Vp) = self.reverse_belief_graph(U,V)
@@ -113,6 +115,53 @@ class POMDP:
 #
 #               calcul de la safety value à epsilon près
 #
+
+    def min_proba(self):
+        mini = 1
+        for i in range(self.nb_state):
+            for a in range(self.nb_act):
+                for dico in self.transition[i][a].values():
+                    for p in dico.values():
+                        if (p < mini):
+                            mini = p
+        return(mini)
+
+    def approximation(self,belief,mu):
+        approx = []
+        dist = []
+        for i in range(self.nb_state):
+            qi = belief[i]
+            qi = Fraction(qi)
+            k = int(Fraction(qi,mu))
+            maxi = min(1,(k+1)*mu)                                                          # on ne veut pas dépasser la proba de 1
+            if (abs(k*mu - qi) < abs(maxi - qi)):
+                approx.append(k*mu)
+                dist.append((abs(k*mu - qi),i))
+            else:
+                approx.append(maxi)
+                dist.append((maxi,i))
+        s = 0
+        for i in range(self.nb_state):
+            s += approx[i]
+        if (s != 1):
+            dist.sort(key = tri)
+            nb = (1-s)/mu
+            c = 0
+            if (s < 1):
+                while (nb != 0):                                                            # a un moment nb vaudra 0 car nb est plus petit que le nombre de fois où on a baisser la proba
+                    (d,i) = dist[c]
+                    if (approx[i] < belief[i]):
+                        approx[i] += mu
+                        nb -= 1
+                    c += 1
+            else:
+                while (nb != 0):                                                            # de même pour -nb
+                    (d,i) = dist[c]
+                    if (approx[i] > belief[i]):
+                        approx[i] -= mu
+                        nb += 1
+                    c += 1
+        return(approx)   
 
     def encode_belief(self,belief):
         s = ""
@@ -163,7 +212,7 @@ class POMDP:
                 new_believes.append(new_belief)
         return()
     
-    def update_proba(self,parents,children,lose_proba,code,action,n):                                 # trouver un moyen de mettre à jour la proba de pnp
+    def update_proba(self,parents,children,lose_proba,code,action,n):                               # trouver un moyen de mettre à jour la proba de pnp
         proba_min = 0
         proba_max = 0
 
@@ -185,7 +234,7 @@ class POMDP:
                     self.update_proba(parents,children,lose_proba,parent,a,i)
         return(None)
 
-    def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n):
+    def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n,mu):
         code_win = self.encode_belief([0 for _ in range(self.nb_state)])
         new_believes = []
 
@@ -207,17 +256,20 @@ class POMDP:
                             if o in self.transition[j][a].keys():
                                 for k in self.transition[j][a][o].keys():
                                     new_belief[k] += belief[j]*self.transition[j][a][o][k]/s
+                        
+                        if (mu != -1):                                                              # on approxime nos beliefs
+                            new_belief = self.approximation(new_belief,mu)
                     
                         self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,s,winning_belief,code_win,code_belief,n)
                 self.update_proba(parents,children,lose_proba,code_belief,a,n-1)
         (pmin,pmax,_,_) = lose_proba[(code_init,0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon):                                                                 # calcul de la safety value
+    def safety_value(self,epsilon,mu):                                                              # calcul de la safety value
         init = [0 for i in range(self.nb_state)]
         init[self.init] = 1
         code_init = self.encode_belief(init)
-        parents = {(code_init,0) : {i : [(code_init,0)] for i in range(self.nb_act)}}                   # parents : dictionnaire de parents indexé par les beliefs contenant un dictionnaire de parents indexé par les actions dont on obtient l'enfant via l'action (utile pour update les proba)
+        parents = {(code_init,0) : {i : [(code_init,0)] for i in range(self.nb_act)}}               # parents : dictionnaire de parents indexé par les beliefs contenant un dictionnaire de parents indexé par les actions dont on obtient l'enfant via l'action (utile pour update les proba)
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
         actual_believes = [init]
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
@@ -225,8 +277,10 @@ class POMDP:
         pnp = 1
         pnm = 0
         n = 1
+        if (mu != -1):
+            epsilon /=2
         while (abs(pnm-pnp) > epsilon):
-            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,actual_believes,winning_belief,epsilon,code_init,n)
+            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,actual_believes,winning_belief,epsilon,code_init,n,mu)
             n += 1
             print("         Computation of the safety value in progress, current estimation :",1-pnm)
         return(1-pnm)
@@ -245,6 +299,10 @@ def inclusion(x,y):
         return(True)
 
 # On pourrais faire une implémentation des éléments maximaux sous forme d'un ZDD, cela permettrait de réduire la complexité moyenne de la taille de la représentation de l'ensemble et du test d'appartenance mais pas la complexité asymptotique.
+
+def tri(x):
+    (x1,x2) = x
+    return(-x1)
 
 def maximal_elements(t):
     n = len(t)
