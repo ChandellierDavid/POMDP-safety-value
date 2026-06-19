@@ -1,0 +1,49 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+
+\title{Résultats}
+\author{Chandellier David}
+
+\begin{document}
+
+\maketitle
+
+\section{Taille de l'ensemble des beliefs gagnants maximaux}
+
+    Il peut être de taille exponentiel en la taille du POMDP ($\frac{2^{|Q|}}{|Q|}$ avec deux actions et une observation). \newline
+
+    Exemple : \newline
+
+    importer une image.
+
+\section{borne supérieure de la complexité de l'algorithme}
+
+    Mon algorithme calcule la safety valeur en 
+    $O(|Sig|*|Q|^{3}*(|Act|*|Sig|)^{nb\_tour+2} + nb\_tour*(|Act|*|Sig|)^{nb\_tour + 3} + |Act|*|Sig|*|Q|*2^{|Q|})$. \newline
+
+    Une borne supérieure du nombre de tour de boucle est en $O(log(\frac{1}{\epsilon})*(\frac{1}{p})^{2^{|Q|}})$,
+    où p est la plus petite probabilité apparaissant dans le POMDP. \newline
+
+    Elle est atteinte par un POMDP que Xavier a détailler (insérer une image et écrire la preuve).
+
+\section{optimisation et changement de l'algorithme}
+
+    J'ai fait une version de l'algorithme travaillant avec des rationnel exact (pas de vrai changement dans l'algo). \newline
+
+    J'ai fait une version où les beliefs sont projeté sur la distribution de proba la plus proche appartenant à $\{ 0, \mu, \dots, (k-1)*\mu, 1 \}^{|Q|}$. \newline
+
+    Avec une precision de $\mu = 1/k$ avec $k = \frac{log(1/\epsilon)*(1/p)**(2**|Q|)}{\epsilon*|Q|}$ on borne l'erreur de calcul de la safety value par $\epsilon$.
+    Donc en faisant le calcul de la safety value sur $M(P)^{\epsilon/2}$ ça marche. \newline
+
+    Et on a une complexité double exponentielle en |Q| valant $O*(\frac{log(1/epsilon)^{|Q|}*(1/p)^{((2^{|Q|})*(|Q|+1))}}{\epsilon})$.
+
+\section{borne inférieure de complexité}
+
+    On peut montrer sans trop de difficulté que c'est exptime dur en réduisant au calcul des états almost-sure
+    (si on a une safety value >= $1-1/(p*(2^{|Q|})$) sur un belief uniforme alors son support est almost-sure winning, preuve pas faite, c'est une intuition). \newline
+
+    On voudrait montrer que c'est 2-exptime dur (complet car on est dedans).
+
+\end{document}
