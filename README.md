@@ -14,7 +14,7 @@ Type python3 Main.py in your terminal.
 My algorithm will ask you to give information such as if you want to use our example, what representation you want :
   - the float representation compute the probabilities with float on 64 bits.
   - the exact rational one compute the probabilities as rationals (it can use more bits, a lot more but is exact) your examples need to have probabilities expressed in rational using the function Fraction     from the module fractions (whereas it won't work).
-  - the approximation one approximate each new belief that is calculated by projecting it on a grid of precision of (epsilon*(p**(2**n))/(log(1/epsilon)*n) for the strong one (it is the only one that have     a proof on the error made by the approximation) and preserving the fact that the belief is a probability distribution (if not it may diverge).
+  - the approximation one approximate each new belief that is calculated by projecting it on a grid of precision of (epsilon*(p^(2^n))/(log(1/epsilon)*n) for the strong one (it is the only one that have     a proof on the error made by the approximation) and preserving the fact that the belief is a probability distribution (if not it may diverge).
 
 it will also ask for the precision value epsilon that must be given as an integer couple for the exact rational algorithm
 If you do not use our examples, your tests must be in an array containing tuples to create a POMDP then you will write the name of the array in the terminal thus the name of the file (that must be in the same folder as my algorithm).
@@ -23,6 +23,6 @@ And the algorithm will calculate the safety value and winning believes
 
 # Complexity of the algorithm
 
-for exact rational numbers, the algorithm is in O*((a*o)**(log(1/epsilon)*(1/p)**(2**n)) where a is the number of actions, o the number of observations, n the number of states and p the smallest probability in the POMDP. (the worst case scenario is very unlikely to happen, it will be faster to compute in practice).
+for exact rational numbers, the algorithm is in O*((a*o)^(log(1/epsilon)*(1/p)^(2^n)) where a is the number of actions, o the number of observations, n the number of states and p the smallest probability in the POMDP. (the worst case scenario is very unlikely to happen, it will be faster to compute in practice).
 
-for approximation and float (that can be see as an approximation with mu = 2**(-52)) the algorithm is in O*((1/mu)**n) with strong approximation it becomes O*(((log(1/epsilon)**n)*(n**n))/((epsilon**n)*(p**(2**n)*(n+1))) which is only in 2 exponential (not 3 like before) but it is way slower with small examples (because a*o << n).
+for approximation and float (that can be see as an approximation with mu = 2^(-52)) the algorithm is in O*((1/mu)^n) with strong approximation it becomes O*(((log(1/epsilon)^n)*(n^n))/((epsilon^n)*(p^(2^n)*(n+1))) which is only in 2 exponential (not 3 like before) but it is way slower with small examples (because a*o << n).
