@@ -41,7 +41,6 @@ class POMDP:
 
     def belief_graph(self):                                                                 # on indexe pas les arêtes par les observations ni les actions car c'est inutile pour le calcul des états perdants
         nb_belief = 2**self.nb_state
-        lose_belief = 2**self.lose                                                          # singleton état perdant
         U = [[] for _ in range(nb_belief)]                                                  # tableau dont les cases sont des tableaux tels que sa case d'indice i est le sommet de V obtenu en faisant l'action i à la fin seul U[0] vaut -1
         V = [[] for _ in range(nb_belief*self.nb_act)]                                      # tableau dont les cases sont des tableaux tels que sa case d'indice i est le sommet de U atteint en observant l'observation i et -1 si on ne peut pas avoir l'observation
 
@@ -55,11 +54,8 @@ class POMDP:
                     obs += (self.transition[j][a].keys())
                 obs = no_repetition(obs)
                 for o in obs:
-                    if (obs == self.losing_obs):
-                        V[card].append(lose_belief)
-                    else:
-                        m = self.transition_belief(i,a,o)
-                        V[card].append(m)
+                    m = self.transition_belief(i,a,o)
+                    V[card].append(m)
                 card += 1
         return(U,V)
         
@@ -128,40 +124,14 @@ class POMDP:
 
     def approximation(self,belief,mu):
         approx = []
-        dist = []
         for i in range(self.nb_state):
             qi = belief[i]
-            qi = Fraction(qi)
             k = int(Fraction(qi,mu))
-            maxi = min(1,(k+1)*mu)                                                          # on ne veut pas dépasser la proba de 1
-            if (abs(k*mu - qi) < abs(maxi - qi)):
+            if (abs(k*mu - qi) < abs((k+1)*mu - qi)):
                 approx.append(k*mu)
-                dist.append((abs(k*mu - qi),i))
             else:
-                approx.append(maxi)
-                dist.append((maxi,i))
-        s = 0
-        for i in range(self.nb_state):
-            s += approx[i]
-        if (s != 1):
-            dist.sort(key = tri)
-            nb = (1-s)/mu
-            c = 0
-            if (s < 1):
-                while (nb != 0):                                                            # a un moment nb vaudra 0 car nb est plus petit que le nombre de fois où on a baisser la proba
-                    (d,i) = dist[c]
-                    if (approx[i] < belief[i]):
-                        approx[i] += mu
-                        nb -= 1
-                    c += 1
-            else:
-                while (nb != 0):                                                            # de même pour -nb
-                    (d,i) = dist[c]
-                    if (approx[i] > belief[i]):
-                        approx[i] -= mu
-                        nb += 1
-                    c += 1
-        return(approx)   
+                approx.append((k+1)*mu)
+        return(approx)
 
     def encode_belief(self,belief):
         s = ""

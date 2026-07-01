@@ -92,8 +92,8 @@ for i in range(len(tests)):
                 else:
                     print(test.decode(winning_code[i]))
     if (mu != -1):
-        pm = test.safety_value(epsilon/2)
-        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n") # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
+        pm = test.safety_value(epsilon/3)
+        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n") # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
     else:
-        pm = test.safety_value(epsilon/3, mu = mu)
-        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
+        pm = test.safety_value(epsilon/2, mu = mu)
+        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
