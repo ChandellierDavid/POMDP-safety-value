@@ -26,17 +26,16 @@ class POMDP:
 #           construction des beliefs perdants
 #
 
-    def transition_belief(self,k,a,o):                                                      # k est un entier encodant le belief le i-ème bit vaut 1 si qi est dans le belief, a une action, et o une observation
+    def transition_belief(self,t,a,o):                                                      # k est un entier encodant le belief le i-ème bit vaut 1 si qi est dans le belief, a une action, et o une observation
         new_belief = 0
-        t = self.decode(k)
-        deja_vu = [False for _ in range(self.nb_state)]
+        seen = [False for _ in range(self.nb_state)]
 
         for i in t:
             if o in self.transition[i][a]:
                 for j in self.transition[i][a][o].keys():                                   # état atteignable depuis i en prenant l'action a et en observant o
-                    if not(deja_vu[j]):    
+                    if not(seen[j]):    
                         new_belief += 2**j
-                        deja_vu[j] = True
+                        seen[j] = True
         return(new_belief)
 
     def belief_graph(self):                                                                 # on indexe pas les arêtes par les observations ni les actions car c'est inutile pour le calcul des états perdants
@@ -49,13 +48,13 @@ class POMDP:
             t = self.decode(i)
             for a in range(self.nb_act):
                 U[i].append(card)
-                obs = []
+                seen = [False for _ in range(self.nb_obs)]
                 for j in t:
-                    obs += (self.transition[j][a].keys())
-                obs = no_repetition(obs)
-                for o in obs:
-                    m = self.transition_belief(i,a,o)
-                    V[card].append(m)
+                    for o in self.transition[j][a].keys():
+                        if (not(seen[o])):
+                            seen[o] = True
+                            m = self.transition_belief(t,a,o)
+                            V[card].append(m)
                 card += 1
         return(U,V)
         
@@ -74,7 +73,7 @@ class POMDP:
                 Up[u].append(i)                                                             # les sommets de u n'ont pas forcément degré entrant 1
         return(Up,Vp)
     
-    def losing_belief(self):                                                                # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
+    def winning_belief(self):                                                                # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
         nb_belief = 2**self.nb_state
         (U,V) = self.belief_graph()
         (Up,Vp) = self.reverse_belief_graph(U,V)
@@ -85,7 +84,7 @@ class POMDP:
         new_v = []
 
         for i in range(nb_belief):
-            if ((len(bin(i)) > self.lose + 2) and int(bin(i)[-1-self.lose]) == 1):          # proba non nulle d'être sur l'état perdant
+            if ((len(bin(i)) > self.lose + 2) and int(bin(i)[-1-self.lose]) == 1):          # proba non nulle d'être sur l'état perdant, on met des believes non accessible pour diminuer le cardinal du complémentaire
                 losing_U[i] = True
                 new_u.append(i)
 
@@ -106,7 +105,7 @@ class POMDP:
                     if (winning_neighbors_u[i] == 0):                                       # J1 veut éviter lose, il ne peut pas l'éviter si tous ces voisins peuvent l'atteindre
                         losing_U[i] = True
                         new_u.append(i)
-        return(losing_U)                                                                    # états perdant de J1, les seuls utiles
+        return(complementary(losing_U))                                                     # états perdant de J1, les seuls utiles
 
 #
 #               calcul de la safety value à epsilon près
@@ -202,7 +201,7 @@ class POMDP:
             for a in parents[(code,n)].keys():
                 for (parent,i) in parents[(code,n)][a]:
                     self.update_proba(parents,children,lose_proba,parent,a,i)
-        return(None)
+        return()
 
     def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n,mu):
         code_win = self.encode_belief([0 for _ in range(self.nb_state)])
@@ -211,26 +210,24 @@ class POMDP:
         for belief in actual_belief:
             code_belief = self.encode_belief(belief)
             for a in range(self.nb_act):
-                for o in range(self.nb_obs):                                                        # on fait l'action a et on a vu l'observation o
-                    s = 0                                                                           # c'est la proba d'avoir l'oservation o qui servira à normaliser la proba que l'on va calculer (la somme des s sur les observation vaut 1)
-                    for i in range(self.nb_state):
-                        s1 = 0
-                        if o in self.transition[i][a]:
-                            for v in self.transition[i][a][o].values():
-                                s1 += v
-                        s += belief[i]*s1
-
-                    if (s != 0):                                                                    # on a bien un belief accessible depuis l'observation s
+                proba_obs = [0 for _ in range(self.nb_obs)]                                         # l'indice o va contenir la probabilité d'avoir l'observation o depuis le belief belief
+                for i in range(self.nb_state):
+                    for o in self.transition[i][a].keys():
+                        for v in self.transition[i][a][o].values():
+                            proba_obs[o] += v*belief[i]
+                
+                for o in range(self.nb_obs):
+                    if (proba_obs[o] != 0):                                                         # on a bien un belief accessible depuis l'observation o
                         new_belief = [0 for _ in range(self.nb_state)]
                         for j in range(self.nb_state):                                              # calcul de la proba d'être dans l'état i
                             if o in self.transition[j][a].keys():
                                 for k in self.transition[j][a][o].keys():
-                                    new_belief[k] += belief[j]*self.transition[j][a][o][k]/s
+                                    new_belief[k] += belief[j]*self.transition[j][a][o][k]/proba_obs[o]
                         
                         if (mu != -1):                                                              # on approxime nos beliefs
                             new_belief = self.approximation(new_belief,mu)
                     
-                        self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,s,winning_belief,code_win,code_belief,n)
+                        self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,proba_obs[o],winning_belief,code_win,code_belief,n)
                 self.update_proba(parents,children,lose_proba,code_belief,a,n-1)
         (pmin,pmax,_,_) = lose_proba[(code_init,0)]
         return(new_believes,pmin,pmax)
@@ -243,7 +240,7 @@ class POMDP:
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
         actual_believes = [init]
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
-        winning_belief = maximal_elements(complementary(self.losing_belief()))                      # on considère que gagner c'est ne pas perdre
+        winning_belief = maximal_elements(self.winning_belief())                                     # on considère que gagner c'est ne pas perdre
         pnp = 1
         pnm = 0
         n = 1
@@ -268,30 +265,14 @@ def inclusion(x,y):
 
 # On pourrais faire une implémentation des éléments maximaux sous forme d'un ZDD, cela permettrait de réduire la complexité moyenne de la taille de la représentation de l'ensemble et du test d'appartenance mais pas la complexité asymptotique.
 
-def tri(x):
-    (x1,x2) = x
-    return(-x1)
-
 def maximal_elements(t):
     n = len(t)
     max = []
     for i in range(n):
-        pop = []
-        inclu = False
-        for k in max:
-            if inclusion(t[i],k):                                                                   # on regarde si il y a un élément dans lequel on est inclu si non, on est maximal
-                inclu = True
-            if inclusion(k,t[i]):
-               pop.append(i)
-        new_max = []
-        i0 = 0
-        for j in range(len(max)):
-            if (max[j] == pop[i0]):
-                i0 += 1
-            else:
-                new_max.append(max[j])
-        max = new_max
-        if not(inclu):
+        j = 0
+        while ((j < n) and (not(inclusion(t[i],t[j])) or (i == j)) ):
+            j += 1
+        if (j == n):
             max.append(t[i])
     return(max)
 
@@ -301,10 +282,3 @@ def complementary(believes):
         if not(believes[i]):
             comp.append(i)
     return(comp)
-
-def no_repetition(t):
-    out = {}
-    for o in t:
-        if o not in out:
-            out[o] = 1
-    return(out.keys())

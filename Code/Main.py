@@ -62,7 +62,7 @@ else:
             import Example as ex
         tests = ex.examples
 
-for i in range(len(tests)):
+for i in range(11,12):
     (n,a,o,init,lose,lose_obs,Delta) = tests[i]
     test = P.POMDP(n,init,lose,lose_obs,a,o,Delta)
     if (approx == "none"):
@@ -78,7 +78,7 @@ for i in range(len(tests)):
                 if ((approx == "strong") or (approx == "Strong")):
                     mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                              # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
     
-    winning_code = P.complementary(test.losing_belief())
+    winning_code = test.winning_belief()
 
     print("Example",i+1,":", end = "\n\n")
     print("     Winning believes : ", end = "")
