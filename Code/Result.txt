@@ -1,0 +1,24 @@
+Safety value of test 1 : 1
+
+Safety value of test 2 : 0.5
+
+Safety value of test 3 : 0.0
+
+Safety value of test 4 : 1.0
+
+Safety value of test 5 : 0.04614257812500022
+
+Safety value of test 6 : 0.0
+
+Safety value of test 7 : 1
+
+Safety value of test 8 : 0.0
+
+Safety value of test 9 : 0.49855541999999997
+
+Safety value of test 10 : 0.04544886506152801
+
+Safety value of test 11 : 0.0453634240868539
+
+Safety value of test 12 : 0.04988440350997647
+

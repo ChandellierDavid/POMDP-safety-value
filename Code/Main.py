@@ -62,38 +62,31 @@ else:
             import Example as ex
         tests = ex.examples
 
-for i in range(11,12):
-    (n,a,o,init,lose,lose_obs,Delta) = tests[i]
-    test = P.POMDP(n,init,lose,lose_obs,a,o,Delta)
-    if (approx == "none"):
-        mu = -1
-    else:
-        p = test.min_proba()
-        if ((approx == "weak") or (approx == "Weak")):
-            mu = Fraction(1,int((2**((1/epsilon)**0.5))/p))
+with open("Result.txt", "w") as result:
+    if (do_example == "No" or do_example == "no"):
+        result.write("tested file : "+file+"tested array"+array+"\n\n")
+    for i in range(len(tests)):
+        (n,a,o,init,lose,Delta) = tests[i]
+        test = P.POMDP(n,init,lose,a,o,Delta)
+        if (approx == "none"):
+            mu = -1
         else:
-            if ((approx == "medium") or (approx == "Medium")):
-                mu = Fraction(1,int((log(3/epsilon)/((epsilon/3)*(p**n))))+1)
+            p = test.min_proba()
+            if ((approx == "weak") or (approx == "Weak")):
+                mu = Fraction(1,int((2**((1/epsilon)**0.5))/p))
             else:
-                if ((approx == "strong") or (approx == "Strong")):
-                    mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                              # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
-    
-    winning_code = test.winning_belief()
-
-    print("Example",i+1,":", end = "\n\n")
-    print("     Winning believes : ", end = "")
-    if (len(winning_code) == 1):
-        print("none")
-    else:
-        for i in range(len(winning_code)):
-            if (winning_code[i] != 0):
-                if (i < len(winning_code) -1):
-                    print(test.decode(winning_code[i]), end = ", ")
+                if ((approx == "medium") or (approx == "Medium")):
+                    mu = Fraction(1,int((log(3/epsilon)/((epsilon/3)*(p**n))))+1)
                 else:
-                    print(test.decode(winning_code[i]))
-    if (mu != -1):
-        pm = test.safety_value(epsilon/3)
-        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n") # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
-    else:
-        pm = test.safety_value(epsilon/2, mu = mu)
-        print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
+                    if ((approx == "strong") or (approx == "Strong")):
+                        mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                              # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
+        
+        print("Test",i+1,":", end = "\n\n")
+
+        if (mu != -1):
+            pm = test.safety_value(epsilon/3)
+            print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n") # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
+        else:
+            pm = test.safety_value(epsilon/2, mu = mu)
+            print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
+        result.write("Safety value of test "+str(i+1)+" : "+str(pm)+"\n\n")

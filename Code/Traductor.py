@@ -1,4 +1,7 @@
 from os import listdir
+from random import sample
+from random import randint
+from random import random
 
 def traduction(f):
     states = []
@@ -17,6 +20,11 @@ def traduction(f):
         states.append(state)
         if (f[i] != "\n"):
             i += 1
+    
+    if len(states) > 20:
+        print("test too big, the algorithm will take to much time, this test has not been added", end = "\n\n")
+        return(len(states),0,0,0,0,[[{0 : {}}]])
+    
     i += 10
     while (f[i] != "\n"):
         action = ""
@@ -69,19 +77,19 @@ def traduction(f):
     for i in range(o):
         observations_bij[observations[i]] = i
 
+
     bool = False
     lose = n                                                    # on fait un nouvel état qui sera l'état perdant
-    lose_obs = len(observations)                                # on fait une nouvelle observation qui sera l'observation menant vers l'état perdant
-    n += 1
-    o += 1
+    lose_obs = o                                                # on fait une nouvelle observation qui sera l'observation menant vers l'état perdant
+    c = 1
     if (len(starts) == 1):
         init = states_bij[starts[0]]
     else:
         init = n
-        n += 1
+        c += 1
         bool = True
     
-    Delta = [[{} for _ in range(m)] for _ in range(n)]
+    Delta = [[{} for _ in range(m)] for _ in range(n+c)]
     if bool:
         init_distr = {}
         if not(proba):
@@ -94,10 +102,13 @@ def traduction(f):
                     init_distr[j] = p
         for a in range(m):
             Delta[init][a][0] = init_distr
+    for a in range(m):
+        Delta[lose][a][lose_obs] = {lose : 1}
 
     while (f[i:i+2] != "T:"):
         i += 1
 
+    transitions = [[] for _ in range(m)]
     for _ in range(m):
         i += 2
         act = ""
@@ -125,7 +136,9 @@ def traduction(f):
             ord += 1
             abs = 0
             i += 1
+        transitions[actions_bij[act]] = transition
 
+    observations = [[] for _ in range(m)]
     for _ in range(m):
         i += 2
         act = ""
@@ -149,29 +162,57 @@ def traduction(f):
             ord += 1
             abs = 0
             i += 1
-    return((n,m,o,init,lose,lose_obs,Delta))
+        observations[actions_bij[act]] = observation
+    
+    for q1 in range(n):
+        for a in range(m):
+            for q2 in range(n):
+                t = transitions[a][q1][q2]
+                if (t != 0):
+                    for obs in range(o):
+                        if (observations[a][q2][obs] != 0):
+                            if obs not in Delta[q1][a]:
+                                Delta[q1][a][obs] = {q2 : t*observations[a][q2][obs]}
+                            else:
+                                Delta[q1][a][obs][q2] = t*observations[a][q2][obs]
+    
+    to_lose = sample(range(n),randint(0,n-1))
+    for i in range(len(to_lose)):
+        q1 = to_lose[i]
+        lose_act = sample(range(m),randint(1,m-1))
+        for j in range(len(lose_act)):
+            a = lose_act[j]
+            p = random()
+            for obs in Delta[q1][a].keys():
+                for q2 in Delta[q1][a][obs].keys():
+                    Delta[q1][a][obs][q2] *= 1-p
+            Delta[q1][a][lose_obs] = {lose : p}
+
+    return((n+c,m,o+1,init,lose,Delta))
 
 tests = []
 folder = listdir("Benchmark")
-k = 0
+k1 = 0
+k2 = 0
 
-with open("Traducted.py", "w", encoding="utf-8") as trad:
+with open("Traducted.py", "w") as trad:
     trad.write("tests = []\n\n")
 
     for file in folder:
-        k += 1
-        trad.write("#\n#                    Traduction of "+file+"\n#\n\n")
+        k1 += 1
         f = open("Benchmark/"+file,'r')
         f = f.read()
-        print("fichier en cours de traduction :", file)
-        (n,m,o,init,lose,lose_obs,Delta) = traduction(f)
-        trad.write("n = "+str(n)+"\n")
-        trad.write("m = "+str(m)+"\n")
-        trad.write("o = "+str(o)+"\n")
-        trad.write("init = "+str(init)+"\n")
-        trad.write("lose = "+str(lose)+"\n")
-        trad.write("lose_obs = "+str(lose_obs)+"\n")
-        trad.write("Delta = "+str(Delta)+"\n")
-        trad.write("tests.append((n,m,o,init,lose,lose_obs,Delta))\n\n")
-        print("fichier traduit",k, end = "\n\n")
+        print("Traducting file :", file)
+        (n,m,o,init,lose,Delta) = traduction(f)
+        if (n <= 20):
+            k2 += 1
+            trad.write("#\n#                    Test : "+str(k2)+", Traduction of "+file+"\n#\n\n")
+            trad.write("n = "+str(n)+"\n")
+            trad.write("m = "+str(m)+"\n")
+            trad.write("o = "+str(o)+"\n")
+            trad.write("init = "+str(init)+"\n")
+            trad.write("lose = "+str(lose)+"\n")
+            trad.write("Delta = "+str(Delta)+"\n")
+            trad.write("tests.append((n,m,o,init,lose,Delta))\n\n")
+            print("Traducted file\nNumber of files traducted : ",k2,"\nTotal number of files : ",k1, end = "\n\n")
 print("fin de la traduction")

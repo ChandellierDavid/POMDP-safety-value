@@ -1,10 +1,9 @@
 from fractions import Fraction
 
 class POMDP:
-    def __init__(self,n,init,lose,losing_obs,k,p,Delta):
+    def __init__(self,n,init,lose,k,p,Delta):
         self.init = init                    # état initial
         self.lose = lose                    # état perdant, pas nécessaire dans le cas général mais dans notre cas si
-        self.losing_obs = losing_obs        # observation menant à l'état perdant, pas nécessaire non plus
         self.nb_state = n                   # les états sont nommés de 0 à (n-1)
         self.nb_act = k                     # les actions sont nommées de 0 à (k-1)
         self.nb_obs = p                     # les observation sont nomées de 0 à (p-1)
@@ -241,6 +240,18 @@ class POMDP:
         actual_believes = [init]
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
         winning_belief = maximal_elements(self.winning_belief())                                     # on considère que gagner c'est ne pas perdre
+
+        print("     Maximal winning believes : ", end = "")
+        if (winning_belief == [[]]):
+            print("none")
+        else:
+            for i in range(len(winning_belief)):
+                if (winning_belief[i] != 0):
+                    if (i < len(winning_belief) -1):
+                        print(self.decode(winning_belief[i]), end = ", ")
+                    else:
+                        print(self.decode(winning_belief[i]))
+
         pnp = 1
         pnm = 0
         n = 1

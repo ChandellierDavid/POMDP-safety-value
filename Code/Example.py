@@ -23,7 +23,7 @@ Delta[3][1][2] = {4 : 1}
 Delta[4][0][2] = {4 : 1}
 Delta[4][1][2] = {4 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 2
@@ -48,7 +48,7 @@ Delta[3][1][2] = {4 : 1}
 Delta[4][0][2] = {4 : 1}
 Delta[4][1][2] = {4 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 #
 #   Example 3
 #
@@ -61,7 +61,7 @@ o = 1
 lose_obs = 0
 Delta = [[{0 : {1 : 1}}],[{0 : {1 : 1}}]]
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 4
@@ -91,7 +91,7 @@ for i in range(1,9):
     else:
         Delta[i][0][0] = {i+3 : 0.5, i : 0.5}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 5
@@ -122,7 +122,7 @@ for i in range(1,9):
     else:
         Delta[i][0][0] = {i+3 : 0.5, i : 0.5}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 6
@@ -136,7 +136,7 @@ o = 1
 lose_obs = 0
 Delta = [[{0 : {0 : 1}}]]
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 7 : notre POMDP avec un ensemble de belief gagnant maximaux exponentiel pour n = 5
@@ -164,7 +164,7 @@ for i in range(1,9):
     Delta[i][1][1] = {i+2 : 1}
     Delta[i][0][0] = {i+2 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 8
@@ -192,7 +192,7 @@ for i in range(1,9):
     Delta[i][1][1] = {i+2 : 1}
     Delta[i][0][0] = {i+2 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 9 : figure 8 du papier des encadrants
@@ -213,7 +213,7 @@ Delta[2][0][0] = {1 : 0.33, 2 : 0.33}
 Delta[2][0][1] = {3 : 0.34}
 Delta[3][0][1] = {3 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 10
@@ -236,7 +236,7 @@ for i in range(1,n-1):
     Delta[i][0][i] = {i : 1-p}
     Delta[i][0][(i+1)%(n-1)] = {(i+1)%(n-1) : p}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 11
@@ -259,7 +259,7 @@ for i in range(1,n-1):
     Delta[i][0][1] = {1 : 1-p}
     Delta[i][0][(i+1)%(n-1)] = {(i+1)%(n-1) : p}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Example 12
@@ -278,7 +278,7 @@ Delta[0][0][1] = {1 : p}
 Delta[0][0][0] = {0 : 1-p}
 Delta[1][0][1] = {1 : 1}
 
-examples.append((n,m,o,init,lose,lose_obs,Delta))
+examples.append((n,m,o,init,lose,Delta))
 
 #
 #   Rejected example
@@ -353,4 +353,4 @@ for i in range(5):
     Delta[13+2*i+1][1][1][offset] = 0.25
     offset += 5-i
 
-example.append((P.POMDP(n,init,lose,lose_obs,m,o,Delta)))"""
+example.append((P.POMDP(n,init,lose,m,o,Delta)))"""
