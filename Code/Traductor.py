@@ -195,7 +195,7 @@ folder = listdir("Benchmark")
 k1 = 0
 k2 = 0
 
-with open("Traducted.py", "w") as trad:
+with open("Traduced.py", "w") as trad:
     trad.write("tests = []\n\n")
 
     for file in folder:
