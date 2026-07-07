@@ -131,10 +131,14 @@ class POMDP:
                 approx.append((k+1)*mu)
         return(approx)
 
-    def encode_belief(self,belief):
+    def encode_belief(self,belief,frac):
         s = ""
-        for p in belief:
-            s += str(p)+"_"
+        if frac:
+            for p in belief:
+                s += str(p)+"_"
+        else:
+            for p in belief:
+                s += str(float(p))+"_"
         return(s)
 
     def almost_winning(self,epsilon,winning,belief):                                         # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
@@ -147,7 +151,8 @@ class POMDP:
                 return(True)
         return(False)
     
-    def update_belief(self,parents,children,lose_proba,new_believes,new_belief,epsilon,a,s,winning_belief,code_win,code_belief,n):
+    def update_belief(self,parents,children,lose_proba,new_believes,new_belief,epsilon,a,s,winning_belief,code_belief,n,frac):
+        code_win = "win"
         if self.almost_winning(epsilon,winning_belief,new_belief):                          # un long truc pour mettre à jour les dictionnaire parents et enfants et ne pas mettre de doublon
             if (code_win,n) not in parents:
                 parents[(code_win,n)] = {}
@@ -161,9 +166,10 @@ class POMDP:
                 children[(code_belief,n-1)] = [[] for _ in range(self.nb_act)]
             if (code_win,n,s) not in children[(code_belief,n-1)][a]:
                 children[(code_belief,n-1)][a].append((code_win,n,s))
-                lose_proba[(code_win,n)] = (0,0,[0 for _ in range(self.nb_act)],[0 for _ in range(self.nb_act)])
+                if (code_win,n) not in lose_proba:
+                    lose_proba[(code_win,n)] = (0,0,[0 for _ in range(self.nb_act)],[0 for _ in range(self.nb_act)])
         else:
-            code_new_belief = self.encode_belief(new_belief)
+            code_new_belief = self.encode_belief(new_belief,frac)
             if (code_new_belief,n) not in parents:
                 parents[(code_new_belief,n)] = {}
             if a not in parents[(code_new_belief,n)]:
@@ -176,8 +182,9 @@ class POMDP:
                 children[(code_belief,n-1)] = [[] for _ in range(self.nb_act)]
             if (code_new_belief,n,s) not in children[(code_belief,n-1)][a]:
                 children[(code_belief,n-1)][a].append((code_new_belief,n,s))
-                lose_proba[(code_new_belief,n)] = (new_belief[self.lose],1,[new_belief[self.lose] for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])
-                new_believes.append(new_belief)
+                if (code_new_belief not in new_believes):
+                    lose_proba[(code_new_belief,n)] = (int(new_belief[self.lose]),1,[int(new_belief[self.lose]) for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])
+                    new_believes[code_new_belief] = new_belief
         return()
     
     def update_proba(self,parents,children,lose_proba,code,action,n):                               # trouver un moyen de mettre à jour la proba de pnp
@@ -202,12 +209,11 @@ class POMDP:
                     self.update_proba(parents,children,lose_proba,parent,a,i)
         return()
 
-    def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n,mu):
-        code_win = self.encode_belief([0 for _ in range(self.nb_state)])
-        new_believes = []
+    def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n,mu,frac):
+        new_believes = {}
 
-        for belief in actual_belief:
-            code_belief = self.encode_belief(belief)
+        for code_belief in actual_belief.keys():
+            belief = actual_belief[code_belief]
             for a in range(self.nb_act):
                 proba_obs = [0 for _ in range(self.nb_obs)]                                         # l'indice o va contenir la probabilité d'avoir l'observation o depuis le belief belief
                 for i in range(self.nb_state):
@@ -225,40 +231,45 @@ class POMDP:
                         
                         if (mu != -1):                                                              # on approxime nos beliefs
                             new_belief = self.approximation(new_belief,mu)
-                    
-                        self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,proba_obs[o],winning_belief,code_win,code_belief,n)
+
+                        self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,proba_obs[o],winning_belief,code_belief,n,frac)
                 self.update_proba(parents,children,lose_proba,code_belief,a,n-1)
         (pmin,pmax,_,_) = lose_proba[(code_init,0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon,mu = -1):                                                         # calcul de la safety value
+    def safety_value(self,epsilon,frac,mu = -1):                                                         # calcul de la safety value
         init = [0 for i in range(self.nb_state)]
         init[self.init] = 1
-        code_init = self.encode_belief(init)
+        code_init = self.encode_belief(init,frac)
         parents = {(code_init,0) : {i : [(code_init,0)] for i in range(self.nb_act)}}               # parents : dictionnaire de parents indexé par les beliefs contenant un dictionnaire de parents indexé par les actions dont on obtient l'enfant via l'action (utile pour update les proba)
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
-        actual_believes = [init]
+        actual_believes = {code_init : init}
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
         winning_belief = maximal_elements(self.winning_belief())                                     # on considère que gagner c'est ne pas perdre
 
         print("     Maximal winning believes : ", end = "")
-        if (winning_belief == [[]]):
+        if (winning_belief == [0]):
             print("none")
         else:
             for i in range(len(winning_belief)):
-                if (winning_belief[i] != 0):
-                    if (i < len(winning_belief) -1):
-                        print(self.decode(winning_belief[i]), end = ", ")
-                    else:
-                        print(self.decode(winning_belief[i]))
+                if (i < len(winning_belief) -1):
+                    print(self.decode(winning_belief[i]), end = ", ")
+                else:
+                    print(self.decode(winning_belief[i]))
 
         pnp = 1
         pnm = 0
         n = 1
         while (abs(pnm-pnp) > epsilon):
-            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,actual_believes,winning_belief,epsilon,code_init,n,mu)
+            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,actual_believes,winning_belief,epsilon,code_init,n,mu,frac)
             n += 1
-            print("         Computation of the safety value in progress, current estimation :",1-pnm)
+            if frac:
+                if (len(bin(pnm.numerator))+len(bin(pnm.denominator)) >= 40):
+                    print("         Computation of the safety value in progress, current estimation :",float(1-pnm))
+                else:
+                    print("         Computation of the safety value in progress, current estimation :",1-pnm)
+            else:
+                print("         Computation of the safety value in progress, current estimation :",1-pnm)
         return(1-pnm)
 
 def inclusion(x,y):
@@ -269,8 +280,8 @@ def inclusion(x,y):
     if nx > ny:                                                                                     # l'écriture en binaire de x est plus longue que celle de y donc l'indice du bit de poids fort de x n'est pas dans le belief représenté par y
         return(False)
     else:
-        for i in range(2,nx):
-            if ((int(bx[i]) == 1) and (int(by[i]) != 1)):                                           # un élément de x n'est pas dans y
+        for i in range(nx-2):
+            if ((int(bx[-i-1]) == 1) and (int(by[-1-i]) != 1)):                                           # un élément de x n'est pas dans y
                 return(False)
         return(True)
 
@@ -281,7 +292,7 @@ def maximal_elements(t):
     max = []
     for i in range(n):
         j = 0
-        while ((j < n) and (not(inclusion(t[i],t[j])) or (i == j)) ):
+        while ((j < n) and (not(inclusion(t[i],t[j])) or (i == j))):
             j += 1
         if (j == n):
             max.append(t[i])

@@ -13,7 +13,7 @@ if ((do_example != "Yes") and (do_example != "yes") and (do_example != "No") and
 
 print("What representation of the probabilities you want : (f for float, q for exact rational numbers, a for aproximation of the numbers based on precision) ")
 if ((do_example == "No") or (do_example == "no")):
-    print("if you use the exact rational numbers you need to encode your probabilities using the module fraction and function Fraction and if you use float you need to not use it \n")
+    print("if you use the exact rational numbers you need to encode your probabilities using the module fraction and the function Fraction and if you use float you need to not use it \n")
 representation = str(input())
 print("\n")
 
@@ -22,7 +22,7 @@ if ((representation == "f") or (representation == "q")):
 else:
     if (representation == "a"):
         print("type of approximation value (strong,medium,weak) :")
-        print("Weak will be enough for a lot of tests but strong is the only one that garantee to satisfy the precision. \n", end = "")
+        print("Float representation can be seen as a fixed approximation. \n", end = "")
         approx = str(input())
         print("\n")
 
@@ -58,8 +58,10 @@ else:
     if (do_example == "Yes" or do_example == "yes"):
         if ((representation == "q") or (representation == "a")):
             import Example_fractions as ex
+            frac = True
         else:
             import Example as ex
+            frac = False
         tests = ex.examples
 
 with open("Result.txt", "w") as result:
@@ -79,14 +81,23 @@ with open("Result.txt", "w") as result:
                     mu = Fraction(1,int((log(3/epsilon)/((epsilon/3)*(p**n))))+1)
                 else:
                     if ((approx == "strong") or (approx == "Strong")):
-                        mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                              # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
+                        mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                                # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
         
         print("Test",i+1,":", end = "\n\n")
 
         if (mu != -1):
-            pm = test.safety_value(epsilon/3)
-            print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n") # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
+            pm = test.safety_value(epsilon/3,frac)
+            if (len(bin(pm.numerator))+len(bin(pm.denominator)) >= 40):                                                                                                     # on ne veut pas que le nombre devienne illisible
+                print("     Safety value : calculated :",float(pm), ", pessimistic :",float(max(pm-epsilon,0)), ", optimistic :", float(min(pm+epsilon,1)), end = "\n\n")
+            else:
+                print("     Safety value : calculated :",pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
         else:
-            pm = test.safety_value(epsilon/2, mu = mu)
-            print("     Safety value : calculated :", pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
+            pm = test.safety_value(epsilon/2,frac,mu = mu)
+            if (representation == "q"):
+                if (len(bin(pm.numerator))+len(bin(pm.denominator)) >= 40):
+                    print("     Safety value : calculated :",float(pm), ", pessimistic :",float(max(pm-epsilon,0)), ", optimistic :", float(min(pm+epsilon,1)), end = "\n\n")
+                else:
+                    print("     Safety value : calculated :",pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
+            else:
+                print("     Safety value : calculated :",pm, ", pessimistic :",max(pm-epsilon/2,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")                      # les pessimistic et optimistic sont les bornes obtenu dans le papier des encadrants
         result.write("Safety value of test "+str(i+1)+" : "+str(pm)+"\n\n")
