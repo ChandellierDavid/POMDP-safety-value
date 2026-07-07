@@ -37,9 +37,11 @@ if (representation == "q" or representation == "a"):
     print("Precision of the safety value (it has an enormous impact on the speed of the algorithm) (writen \"x y\" for x/y) : ", end = "")
     (x,y) = map(int,input().split())
     epsilon = Fraction(x,y)
+    frac = True
 else:
     print("Precision of the safety value (it has an enormous impact on the speed of the algorithm): ", end = "")
     epsilon = float(input())
+    frac = False
 print("\n")
 
 if (do_example == "No" or do_example == "no"):
@@ -58,10 +60,8 @@ else:
     if (do_example == "Yes" or do_example == "yes"):
         if ((representation == "q") or (representation == "a")):
             import Example_fractions as ex
-            frac = True
         else:
             import Example as ex
-            frac = False
         tests = ex.examples
 
 with open("Result.txt", "w") as result:

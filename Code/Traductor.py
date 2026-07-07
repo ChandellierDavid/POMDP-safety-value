@@ -85,7 +85,7 @@ def traduction(f):
     if (len(starts) == 1):
         init = states_bij[starts[0]]
     else:
-        init = n
+        init = n+c
         c += 1
         bool = True
     

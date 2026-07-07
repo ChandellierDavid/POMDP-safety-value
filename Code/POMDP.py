@@ -175,7 +175,7 @@ class POMDP:
             if a not in parents[(code_new_belief,n)]:
                 parents[(code_new_belief,n)][a] = [(code_belief,n-1)]
             else:
-                if (code_belief,s) not in parents[(code_new_belief,n)][a]:
+                if (code_belief,n-1) not in parents[(code_new_belief,n)][a]:
                     parents[(code_new_belief,n)][a].append((code_belief,n-1))
             
             if (code_belief,n-1) not in children:
@@ -237,7 +237,7 @@ class POMDP:
         (pmin,pmax,_,_) = lose_proba[(code_init,0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon,frac,mu = -1):                                                         # calcul de la safety value
+    def safety_value(self,epsilon,frac,mu = -1):                                                    # calcul de la safety value
         init = [0 for i in range(self.nb_state)]
         init[self.init] = 1
         code_init = self.encode_belief(init,frac)
@@ -245,7 +245,7 @@ class POMDP:
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
         actual_believes = {code_init : init}
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
-        winning_belief = maximal_elements(self.winning_belief())                                     # on considère que gagner c'est ne pas perdre
+        winning_belief = maximal_elements(self.winning_belief())                                    # on considère que gagner c'est ne pas perdre
 
         print("     Maximal winning believes : ", end = "")
         if (winning_belief == [0]):
@@ -281,7 +281,7 @@ def inclusion(x,y):
         return(False)
     else:
         for i in range(nx-2):
-            if ((int(bx[-i-1]) == 1) and (int(by[-1-i]) != 1)):                                           # un élément de x n'est pas dans y
+            if ((int(bx[-i-1]) == 1) and (int(by[-1-i]) != 1)):                                     # un élément de x n'est pas dans y
                 return(False)
         return(True)
 
