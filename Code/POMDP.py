@@ -11,15 +11,16 @@ class POMDP:
         return(None)
 
     def decode(self,k):                                                                     # On décode le binaire pour trouver les états dans la partie, on rajoute un flag si lose est dans t (pour la suite)
-        b = bin(k)
         t = []
-        n = len(b)
-
-        for i in range(n-2):
-            c = int(b[-i-1])
-            if c:
+        shift = 1
+        for i in range(k.bit_length()):
+            if (k & shift):
                 t.append(i)
+            shift <<= 1
         return(t)
+    
+    def sort(self,x):
+        return(-len(self.decode(x)))
 
 #
 #           construction des beliefs perdants
@@ -72,7 +73,7 @@ class POMDP:
                 Up[u].append(i)                                                             # les sommets de u n'ont pas forcément degré entrant 1
         return(Up,Vp)
     
-    def winning_belief(self):                                                                # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
+    def winning_believes(self):                                                             # on va calculer l'attracteur des beliefs avec l'état lose, on calcul le complémentaire de safety
         nb_belief = 2**self.nb_state
         (U,V) = self.belief_graph()
         (Up,Vp) = self.reverse_belief_graph(U,V)
@@ -104,7 +105,31 @@ class POMDP:
                     if (winning_neighbors_u[i] == 0):                                       # J1 veut éviter lose, il ne peut pas l'éviter si tous ces voisins peuvent l'atteindre
                         losing_U[i] = True
                         new_u.append(i)
+        
+        losing_U[0] = True
         return(complementary(losing_U))                                                     # états perdant de J1, les seuls utiles
+    
+    def maximal_believes(self,t):                                                           # renvoie les believes maximaux pour l'inclusion
+        if (t == []):
+            return([])
+        else:
+            n = len(t)
+            t.sort(key = self.sort)
+            card_max = len(self.decode(t[0]))
+            max = [t[0]]
+            c = 1
+            while ((c < n) and (len(self.decode(t[c])) == card_max)):
+                max.append(t[c])
+                c += 1
+            for i in range(c,n):
+                elem = t[i]
+                included = False
+                for maxi in max:
+                    if not(elem & ~maxi):                                                   # calcule si elem est inclu dans maxi avec des opérations bit à bit
+                        included = True
+                if not(included):
+                    max.append(elem)
+            return(max)
 
 #
 #               calcul de la safety value à epsilon près
@@ -131,17 +156,14 @@ class POMDP:
                 approx.append((k+1)*mu)
         return(approx)
 
-    def encode_belief(self,belief,frac):
-        s = ""
+    def encode_belief(self,belief,frac):                                                    # le .join et map servent à avoir une complexité linéaire en n car les strong sont immutables
+        s = "_"
         if frac:
-            for p in belief:
-                s += str(p)+"_"
+            return(s.join(map(str,belief)))
         else:
-            for p in belief:
-                s += str(float(p))+"_"
-        return(s)
+            return(s.join(map(str,(map(float,belief)))))
 
-    def almost_winning(self,epsilon,winning,belief):                                         # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
+    def almost_winning(self,epsilon,winning,belief):                                        # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
         for b in winning:
             t = self.decode(b)
             s = 0
@@ -245,10 +267,10 @@ class POMDP:
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
         actual_believes = {code_init : init}
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
-        winning_belief = maximal_elements(self.winning_belief())                                    # on considère que gagner c'est ne pas perdre
+        winning_belief = self.maximal_believes(self.winning_believes())                                    # on considère que gagner c'est ne pas perdre
 
         print("     Maximal winning believes : ", end = "")
-        if (winning_belief == [0]):
+        if (winning_belief == []):
             print("none")
         else:
             for i in range(len(winning_belief)):
@@ -271,32 +293,6 @@ class POMDP:
             else:
                 print("         Computation of the safety value in progress, current estimation :",1-pnm)
         return(1-pnm)
-
-def inclusion(x,y):
-    bx = bin(x)
-    by = bin(y)
-    nx = len(bx)
-    ny = len(by)
-    if nx > ny:                                                                                     # l'écriture en binaire de x est plus longue que celle de y donc l'indice du bit de poids fort de x n'est pas dans le belief représenté par y
-        return(False)
-    else:
-        for i in range(nx-2):
-            if ((int(bx[-i-1]) == 1) and (int(by[-1-i]) != 1)):                                     # un élément de x n'est pas dans y
-                return(False)
-        return(True)
-
-# On pourrais faire une implémentation des éléments maximaux sous forme d'un ZDD, cela permettrait de réduire la complexité moyenne de la taille de la représentation de l'ensemble et du test d'appartenance mais pas la complexité asymptotique.
-
-def maximal_elements(t):
-    n = len(t)
-    max = []
-    for i in range(n):
-        j = 0
-        while ((j < n) and (not(inclusion(t[i],t[j])) or (i == j))):
-            j += 1
-        if (j == n):
-            max.append(t[i])
-    return(max)
 
 def complementary(believes):
     comp = []

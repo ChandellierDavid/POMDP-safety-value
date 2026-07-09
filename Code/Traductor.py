@@ -3,10 +3,18 @@ from random import sample
 from random import randint
 from random import random
 
+def is_number(string):
+    try:
+        int(string)
+        return(True)
+    except ValueError:
+        return(False)
+
 def traduction(f):
     states = []
     actions = []
     observations = []
+    c = 2
 
     i = 0
     while (f[i:i+6] != "states"):
@@ -21,7 +29,20 @@ def traduction(f):
         if (f[i] != "\n"):
             i += 1
     
-    if len(states) > 20:
+    if (len(states) == 1):
+        if is_number(states[0]):
+            n = int(states[0])
+        else:
+            n = 1
+            states_bij = {states[0] : 0}
+    else:
+        number = False
+        n = len(states)
+        states_bij = {}
+        for j in range(n):
+            states_bij[states[j]] = j
+    
+    if (n > 20):
         print("test too big, the algorithm will take to much time, this test has not been added", end = "\n\n")
         return(len(states),0,0,0,0,[[{0 : {}}]])
     
@@ -34,6 +55,20 @@ def traduction(f):
         actions.append(action)
         if (f[i] != "\n"):
             i += 1
+
+    if (len(actions) == 1):
+        if is_number(actions[0]):
+            m = int(actions[0])
+        else:
+            m = 1
+            actions_bij = {actions[0] : 0}
+    else:
+        number = False
+        m = len(actions)
+        actions_bij = {}
+        for j in range(m):
+            actions_bij[actions[j]] = j
+
     i+= 15
     while (f[i] != "\n"):
         observation = ""
@@ -43,67 +78,109 @@ def traduction(f):
         observations.append(observation)
         if (f[i] != "\n"):
             i += 1
+
+    if (len(observations) == 1):
+        if is_number(observations[0]):
+            o = int(observations[0])
+        else:
+            o = 1
+            observations_bij = {observations[0] : 0}
+    else:
+        number = False
+        o = len(observations)
+        observations_bij = {}
+        for j in range(m):
+            observations_bij[observations[j]] = j
+
+    init = n
+    lose = n+1                                                  # on fait un nouvel état qui sera l'état perdant
+    lose_obs = o                                                # on fait une nouvelle observation qui sera l'observation menant vers l'état perdant
+    Delta = [[{} for _ in range(m)] for _ in range(n+c)]
+
+    for a in range(m):
+        Delta[lose][a][lose_obs] = {lose : 1}
+
     i += 1
-    while ((f[i:i+6] != "start:") and (f[i:i+14] != "start include:")):
+    while ((f[i:i+6] != "start:") and (f[i:i+14] != "start include:") and (f[i:i+14]) != "start exclude:"):
         i += 1
     if (f[i:i+6] == "start:"):
         i += 7
-        proba = True
+        starts = []
+        if (f[i:i+7] == "uniform"):
+            for j in range(m):
+                Delta[init][j] = {0 : {k : 1/n for k in range(n)}}
+        else:
+            while (f[i] != "\n"):
+                start = ""
+                while (f[i] != " " and f[i] != "\n"):
+                    start += f[i]
+                    i += 1
+                starts.append(start)
+                if (f[i] != "\n"):
+                    i += 1
+            if (len(starts) != 1):
+                for j in range(n):
+                    init_distr = {}
+                    for k in range(n):
+                        if (float(starts[k]) != 0):
+                            init_distr[k] = float(starts[k])
+                    Delta[init][j] = {0 : init_distr}
+            else:
+                if is_number(starts[0]):
+                    for j in range(m):
+                        Delta[init][j] = {0 : {int(starts[0]) : 1}}
+                else:
+                    for j in range(m):
+                        Delta[init][j] = {0 : {states_bij[starts[0]] : 1}}
+    elif (f[i:i+14] == "start include:"):
+        i += 15
+        starts = []
+        while (f[i] != "\n"):
+            start = ""
+            while (f[i] != " " and f[i] != "\n"):
+                start += f[i]
+                i += 1
+            starts.append(start)
+            if (f[i] != "\n"):
+                i += 1
+
+        all_numbers = True
+        for start in starts:
+            if not(is_number(start)):
+                all_numbers = False
+        
+        if all_numbers:
+            for j in range(m):
+                Delta[init][j] = {0 : {int(start) : 1/len(starts) for start in starts}}
+        else:
+            for j in range(m):
+                Delta[init][j] = {0 : {states_bij[start] : 1/len(starts) for start in starts}}
     else:
         i += 15
-        proba = False
-    starts = []
-    while (f[i] != "\n"):
-        start = ""
-        while (f[i] != " " and f[i] != "\n"):
-            start += f[i]
-            i += 1
-        starts.append(start)
-        if (f[i] != "\n"):
-            i += 1
-    i += 1
+        starts = []
+        while (f[i] != "\n"):
+            start = ""
+            while (f[i] != " " and f[i] != "\n"):
+                start += f[i]
+                i += 1
+            starts.append(start)
+            if (f[i] != "\n"):
+                i += 1
+        
+        for j in range(m):
+            Delta[init][j] = {0 : {}}
 
-    n = len(states)
-    m = len(actions)
-    o = len(observations)
-
-    states_bij = {}
-    actions_bij = {}
-    observations_bij = {}
-    for i in range(n):
-        states_bij[states[i]] = i
-    for i in range(m):
-        actions_bij[actions[i]] = i
-    for i in range(o):
-        observations_bij[observations[i]] = i
-
-
-    bool = False
-    lose = n                                                    # on fait un nouvel état qui sera l'état perdant
-    lose_obs = o                                                # on fait une nouvelle observation qui sera l'observation menant vers l'état perdant
-    c = 1
-    if (len(starts) == 1):
-        init = states_bij[starts[0]]
-    else:
-        init = n+c
-        c += 1
-        bool = True
-    
-    Delta = [[{} for _ in range(m)] for _ in range(n+c)]
-    if bool:
-        init_distr = {}
-        if not(proba):
+        if all_numbers:
             for j in range(len(starts)):
-                init_distr[states_bij[starts[j]]] = 1/len(starts)
+                starts[j] = int(starts[j])
         else:
             for j in range(len(starts)):
-                p = float(starts[j])
-                if p != 0:
-                    init_distr[j] = p
-        for a in range(m):
-            Delta[init][a][0] = init_distr
-    for a in range(m):
-        Delta[lose][a][lose_obs] = {lose : 1}
+                starts[j] = states_bij[starts[j]]
+        for j in range(n):
+            if j not in starts:
+                for k in range(m):
+                    Delta[init][k][0][j] = 1/(n-len(starts))
+    i += 1
 
     while (f[i:i+2] != "T:"):
         i += 1
