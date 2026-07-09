@@ -27,4 +27,4 @@ For exact rational numbers, the algorithm is in O*((a*o)^(log(1/epsilon)*(1/p)^(
 
 For approximation and float (that can be see as an approximation with mu = 2^(-52)) the algorithm is in O*((1/mu)^n) with strong approximation it becomes O*(((log(1/epsilon)^n)*(n^n))/((epsilon^n)*(p^(2^n)*(n+1))) which is only in 2 exponential (not 3 like before) but it is slower with small examples (because often a*o < n approximating as an linear cost on the number of states).
 
-The algorithm return the safety value in a reasonable time for the majorities of POMDPs with less than 20 states (if you try you can find simple examples of POMDP with 3 states that take a lot of time to return a responses).
+The algorithm return the safety value in a reasonable time for the majorities of POMDPs with less than 20 states (if you try you can find simple examples of POMDP with 3 states that take a lot of time to return a response).
