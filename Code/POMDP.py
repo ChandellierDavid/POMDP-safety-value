@@ -176,22 +176,21 @@ class POMDP:
         return(False)
     
     def update_belief(self,parents,children,lose_proba,winning_belief,new_believes,code_belief,new_belief,a,s,n):
-        code_win = "win"
         if self.almost_winning(winning_belief,new_belief):                          # un long truc pour mettre à jour les dictionnaire parents et enfants et ne pas mettre de doublon
-            if (code_win,n) not in parents:
-                parents[(code_win,n)] = {}
-            if a not in parents[(code_win,n)]:
-                parents[(code_win,n)][a] = [(code_belief,n-1)]
+            if ("win",n) not in parents:                                            # le code de l'état gagnant est win, on peut se permettre de le coder comme ça car on ne changera jamais ces probabilités
+                parents[("win",n)] = {}
+            if a not in parents[("win",n)]:
+                parents[("win",n)][a] = [(code_belief,n-1)]
             else:
-                if ((code_belief,n-1) not in parents[(code_win,n)][a]):
-                    parents[(code_win,n)][a].append((code_belief,n-1))
+                if ((code_belief,n-1) not in parents[("win",n)][a]):
+                    parents[("win",n)][a].append((code_belief,n-1))
             
             if (code_belief,n-1) not in children:
                 children[(code_belief,n-1)] = [[] for _ in range(self.nb_act)]
-            if (code_win,n,s) not in children[(code_belief,n-1)][a]:
-                children[(code_belief,n-1)][a].append((code_win,n,s))
-                if (code_win,n) not in lose_proba:
-                    lose_proba[(code_win,n)] = (0,0,[0 for _ in range(self.nb_act)],[0 for _ in range(self.nb_act)])
+            if ("win",n,s) not in children[(code_belief,n-1)][a]:
+                children[(code_belief,n-1)][a].append(("win",n,s))
+                if ("win",n) not in lose_proba:
+                    lose_proba[("win",n)] = (0,0,[0 for _ in range(self.nb_act)],[0 for _ in range(self.nb_act)])
         else:
             code_new_belief = self.encode_belief(new_belief)
             if (code_new_belief,n) not in parents:
@@ -253,7 +252,7 @@ class POMDP:
                                 for k in self.transition[j][a][o].keys():
                                     new_belief[k] += belief[j]*self.transition[j][a][o][k]/proba_obs[o]
                         
-                        if (data["mu"] != -1):                                                              # on approxime nos beliefs
+                        if (data["mu"] != -1):                                                      # on approxime nos beliefs
                             new_belief = self.approximation(new_belief)
 
                         self.update_belief(parents,children,lose_proba,winning_belief,new_believes,code_belief,new_belief,a,proba_obs[o],n)
@@ -261,7 +260,7 @@ class POMDP:
         (pmin,pmax,_,_) = lose_proba[(data["code_init"],0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon,frac = True,mu = -1):                                                    # calcul de la safety value
+    def safety_value(self,epsilon,frac = True,mu = -1):                                             # calcul de la safety value
         data["frac"] = frac
         data["epsilon"] = epsilon
         data["mu"] = mu
