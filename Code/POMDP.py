@@ -1,14 +1,16 @@
 from fractions import Fraction
 
+data = {}                                   # data contiendra des données utilisées uniquement dans des fonctions imbriquées dans une autre qui n'utilise pas ce paramètre, je veux que des paramètres "utiles" dans mes fonctions
+
 class POMDP:
-    def __init__(self,n,init,lose,k,p,Delta):
-        self.init = init                    # état initial
-        self.lose = lose                    # état perdant, pas nécessaire dans le cas général mais dans notre cas si
+    def __init__(self,n,k,p,init,lose,Delta):
         self.nb_state = n                   # les états sont nommés de 0 à (n-1)
         self.nb_act = k                     # les actions sont nommées de 0 à (k-1)
         self.nb_obs = p                     # les observation sont nomées de 0 à (p-1)
+        self.init = init                    # état initial
+        self.lose = lose                    # état perdant, pas nécessaire dans le cas général mais dans notre cas si
         self.transition = Delta             # matrice de dictionnaire de dictionnaire (premier élément un état, second une action, troisième une observation et quatrième un état) une case contient la proba d'aller en un état et d'avoir l'observation en faisant une action à partir d'un état, on suppose que lose est absorbant
-        return(None)
+        return
 
     def decode(self,k):                                                                     # On décode le binaire pour trouver les états dans la partie, on rajoute un flag si lose est dans t (pour la suite)
         t = []
@@ -145,37 +147,37 @@ class POMDP:
                             mini = p
         return(mini)
 
-    def approximation(self,belief,mu):
+    def approximation(self,belief):
         approx = []
         for i in range(self.nb_state):
             qi = belief[i]
-            k = int(Fraction(qi,mu))
-            if (abs(k*mu - qi) < abs((k+1)*mu - qi)):
-                approx.append(k*mu)
+            k = int(Fraction(qi,data["mu"]))
+            if (abs(k*data["mu"] - qi) < abs((k+1)*data["mu"] - qi)):
+                approx.append(k*data["mu"])
             else:
-                approx.append((k+1)*mu)
+                approx.append((k+1)*data["mu"])
         return(approx)
 
-    def encode_belief(self,belief,frac):                                                    # le .join et map servent à avoir une complexité linéaire en n car les strong sont immutables
+    def encode_belief(self,belief):                                                    # le .join et map servent à avoir une complexité linéaire en n car les strong sont immutables
         s = "_"
-        if frac:
+        if data["frac"]:
             return(s.join(map(str,belief)))
         else:
             return(s.join(map(str,(map(float,belief)))))
 
-    def almost_winning(self,epsilon,winning,belief):                                        # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
+    def almost_winning(self,winning,belief):                                        # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
         for b in winning:
             t = self.decode(b)
             s = 0
             for q in t:
                 s += belief[q]
-            if (s >= 1 - epsilon):
+            if (s >= 1 - data["epsilon"]):
                 return(True)
         return(False)
     
-    def update_belief(self,parents,children,lose_proba,new_believes,new_belief,epsilon,a,s,winning_belief,code_belief,n,frac):
+    def update_belief(self,parents,children,lose_proba,winning_belief,new_believes,code_belief,new_belief,a,s,n):
         code_win = "win"
-        if self.almost_winning(epsilon,winning_belief,new_belief):                          # un long truc pour mettre à jour les dictionnaire parents et enfants et ne pas mettre de doublon
+        if self.almost_winning(winning_belief,new_belief):                          # un long truc pour mettre à jour les dictionnaire parents et enfants et ne pas mettre de doublon
             if (code_win,n) not in parents:
                 parents[(code_win,n)] = {}
             if a not in parents[(code_win,n)]:
@@ -191,7 +193,7 @@ class POMDP:
                 if (code_win,n) not in lose_proba:
                     lose_proba[(code_win,n)] = (0,0,[0 for _ in range(self.nb_act)],[0 for _ in range(self.nb_act)])
         else:
-            code_new_belief = self.encode_belief(new_belief,frac)
+            code_new_belief = self.encode_belief(new_belief)
             if (code_new_belief,n) not in parents:
                 parents[(code_new_belief,n)] = {}
             if a not in parents[(code_new_belief,n)]:
@@ -207,7 +209,7 @@ class POMDP:
                 if (code_new_belief not in new_believes):
                     lose_proba[(code_new_belief,n)] = (int(new_belief[self.lose]),1,[int(new_belief[self.lose]) for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])
                     new_believes[code_new_belief] = new_belief
-        return()
+        return
     
     def update_proba(self,parents,children,lose_proba,code,action,n):                               # trouver un moyen de mettre à jour la proba de pnp
         proba_min = 0
@@ -229,9 +231,9 @@ class POMDP:
             for a in parents[(code,n)].keys():
                 for (parent,i) in parents[(code,n)][a]:
                     self.update_proba(parents,children,lose_proba,parent,a,i)
-        return()
+        return
 
-    def update(self,parents,children,lose_proba,actual_belief,winning_belief,epsilon,code_init,n,mu,frac):
+    def update(self,parents,children,lose_proba,winning_belief,actual_belief,n):
         new_believes = {}
 
         for code_belief in actual_belief.keys():
@@ -251,23 +253,27 @@ class POMDP:
                                 for k in self.transition[j][a][o].keys():
                                     new_belief[k] += belief[j]*self.transition[j][a][o][k]/proba_obs[o]
                         
-                        if (mu != -1):                                                              # on approxime nos beliefs
-                            new_belief = self.approximation(new_belief,mu)
+                        if (data["mu"] != -1):                                                              # on approxime nos beliefs
+                            new_belief = self.approximation(new_belief)
 
-                        self.update_belief(parents,children,lose_proba,new_believes,new_belief,epsilon,a,proba_obs[o],winning_belief,code_belief,n,frac)
+                        self.update_belief(parents,children,lose_proba,winning_belief,new_believes,code_belief,new_belief,a,proba_obs[o],n)
                 self.update_proba(parents,children,lose_proba,code_belief,a,n-1)
-        (pmin,pmax,_,_) = lose_proba[(code_init,0)]
+        (pmin,pmax,_,_) = lose_proba[(data["code_init"],0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon,frac,mu = -1):                                                    # calcul de la safety value
+    def safety_value(self,epsilon,frac = True,mu = -1):                                                    # calcul de la safety value
+        data["frac"] = frac
+        data["epsilon"] = epsilon
+        data["mu"] = mu
         init = [0 for i in range(self.nb_state)]
         init[self.init] = 1
-        code_init = self.encode_belief(init,frac)
+        code_init = self.encode_belief(init)
+        data["code_init"] = code_init
         parents = {(code_init,0) : {i : [(code_init,0)] for i in range(self.nb_act)}}               # parents : dictionnaire de parents indexé par les beliefs contenant un dictionnaire de parents indexé par les actions dont on obtient l'enfant via l'action (utile pour update les proba)
         children = {}                                                                               # children : dictionnaire indexé par un belief conteant des tableau d'indice sur les actions contenant : un tableau (d'enfant, proba de passer de parent à enfant en choisissant l'action)
         actual_believes = {code_init : init}
         lose_proba = {(code_init,0) : (0,1,[0 for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])} # on  rajoute deux tableau indexé par les actions pour réduire la complexité de la mise à jour des proba et bien mettre à jour les probas
-        winning_belief = self.maximal_believes(self.winning_believes())                                    # on considère que gagner c'est ne pas perdre
+        winning_belief = self.maximal_believes(self.winning_believes())                                      # on considère que gagner c'est ne pas perdre
 
         print("     Maximal winning believes : ", end = "")
         if (winning_belief == []):
@@ -283,7 +289,7 @@ class POMDP:
         pnm = 0
         n = 1
         while (abs(pnm-pnp) > epsilon):
-            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,actual_believes,winning_belief,epsilon,code_init,n,mu,frac)
+            (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,winning_belief,actual_believes,n)
             n += 1
             if frac:
                 if (len(bin(pnm.numerator))+len(bin(pnm.denominator)) >= 40):

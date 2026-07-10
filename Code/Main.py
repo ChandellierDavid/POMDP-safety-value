@@ -1,5 +1,5 @@
 import POMDP as P
-import importlib as imp
+from importlib import import_module
 from fractions import Fraction
 from math import log
 
@@ -54,7 +54,7 @@ if (do_example == "No" or do_example == "no"):
     file = str(input())
     print("\n")
     
-    module = imp.import_module(file)
+    module = import_module(file)
     tests = getattr(module,array)
 else:
     if (do_example == "Yes" or do_example == "yes"):
@@ -69,7 +69,7 @@ with open("Result.txt", "w") as result:
         result.write("tested file : "+file+"tested array"+array+"\n\n")
     for i in range(len(tests)):
         (n,a,o,init,lose,Delta) = tests[i]
-        test = P.POMDP(n,init,lose,a,o,Delta)
+        test = P.POMDP(n,a,o,init,lose,Delta)
         if (approx == "none"):
             mu = -1
         else:
