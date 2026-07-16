@@ -148,26 +148,29 @@ class POMDP:
         return(mini)
 
     def approximation(self,belief):
-        approx = []
-        for i in range(self.nb_state):
+        approx = {}
+        for i in belief.keys():
             qi = belief[i]
             k = int(Fraction(qi,data["mu"]))
             if (abs(k*data["mu"] - qi) < abs((k+1)*data["mu"] - qi)):
-                approx.append(k*data["mu"])
+                approx[i] = k*data["mu"]
             else:
-                approx.append((k+1)*data["mu"])
+                approx[i] = (k+1)*data["mu"]
         return(approx)
 
     def encode_belief(self,belief):                                                    # le .join et map servent à avoir une complexité linéaire en n car les strong sont immutables
-        s = "_"
-        return(s.join(map(str,map(data["type"],belief))))
+        s1 = "_"
+        s2 = s1.join(map(str,map(data["type"],belief.values())))
+        s3 = s1.join(map(str,belief.keys()))
+        return(s3+":"+s2)
 
     def almost_winning(self,winning,belief):                                        # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
         for b in winning:
             t = self.decode(b)
             s = 0
             for q in t:
-                s += belief[q]
+                if q in belief:
+                    s += belief[q]
             if (s >= 1 - data["epsilon"]):
                 return(True)
         return(False)
@@ -203,7 +206,11 @@ class POMDP:
             if (code_new_belief,n,s) not in children[(code_belief,n-1)][a]:
                 children[(code_belief,n-1)][a].append((code_new_belief,n,s))
                 if (code_new_belief not in new_believes):
-                    lose_proba[(code_new_belief,n)] = (int(new_belief[self.lose]),1,[int(new_belief[self.lose]) for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])
+                    if self.lose not in new_belief:
+                        pb_lose = 0
+                    else:
+                        pb_lose = 1
+                    lose_proba[(code_new_belief,n)] = (int(pb_lose),1,[int(pb_lose) for _ in range(self.nb_act)],[1 for _ in range(self.nb_act)])
                     new_believes[code_new_belief] = new_belief
         return
     
@@ -236,18 +243,21 @@ class POMDP:
             belief = actual_belief[code_belief]
             for a in range(self.nb_act):
                 proba_obs = [0 for _ in range(self.nb_obs)]                                         # l'indice o va contenir la probabilité d'avoir l'observation o depuis le belief belief
-                for i in range(self.nb_state):
+                for i in belief.keys():
                     for o in self.transition[i][a].keys():
                         for v in self.transition[i][a][o].values():
                             proba_obs[o] += v*belief[i]
                 
                 for o in range(self.nb_obs):
                     if (proba_obs[o] != 0):                                                         # on a bien un belief accessible depuis l'observation o
-                        new_belief = [0 for _ in range(self.nb_state)]
-                        for j in range(self.nb_state):                                              # calcul de la proba d'être dans l'état i
+                        new_belief = {}
+                        for j in belief.keys():                                              # calcul de la proba d'être dans l'état i
                             if o in self.transition[j][a].keys():
                                 for k in self.transition[j][a][o].keys():
-                                    new_belief[k] += belief[j]*self.transition[j][a][o][k]/proba_obs[o]
+                                    if k not in new_belief:
+                                        new_belief[k] = belief[j]*self.transition[j][a][o][k]/proba_obs[o]
+                                    else:
+                                        new_belief[k] += belief[j]*self.transition[j][a][o][k]/proba_obs[o]
                         
                         if (data["mu"] != -1):                                                      # on approxime nos beliefs
                             new_belief = self.approximation(new_belief)
@@ -261,8 +271,7 @@ class POMDP:
         data["type"] = type
         data["epsilon"] = epsilon
         data["mu"] = mu
-        init = [0 for i in range(self.nb_state)]
-        init[self.init] = 1
+        init = {self.init : 1}
         code_init = self.encode_belief(init)
         data["code_init"] = code_init
         parents = {(code_init,0) : {i : [(code_init,0)] for i in range(self.nb_act)}}               # parents : dictionnaire de parents indexé par les beliefs contenant un dictionnaire de parents indexé par les actions dont on obtient l'enfant via l'action (utile pour update les proba)

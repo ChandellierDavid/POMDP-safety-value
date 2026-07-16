@@ -6,7 +6,7 @@ Safety value of test 3 : 0
 
 Safety value of test 4 : 1
 
-Safety value of test 5 : 18405051958661937409/48661191875666868481
+Safety value of test 5 : 9793/83521
 
 Safety value of test 6 : 0
 
