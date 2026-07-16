@@ -160,10 +160,7 @@ class POMDP:
 
     def encode_belief(self,belief):                                                    # le .join et map servent à avoir une complexité linéaire en n car les strong sont immutables
         s = "_"
-        if data["frac"]:
-            return(s.join(map(str,belief)))
-        else:
-            return(s.join(map(str,(map(float,belief)))))
+        return(s.join(map(str,map(data["type"],belief))))
 
     def almost_winning(self,winning,belief):                                        # avoiding sera les tableau des états perdants maximaux pour l'inclusion, le belief sera cette fois-ci donner par un tableau donnant une distribution de proba sur les états
         for b in winning:
@@ -260,8 +257,8 @@ class POMDP:
         (pmin,pmax,_,_) = lose_proba[(data["code_init"],0)]
         return(new_believes,pmin,pmax)
 
-    def safety_value(self,epsilon,frac = True,mu = -1):                                             # calcul de la safety value
-        data["frac"] = frac
+    def safety_value(self,epsilon,type,mu = -1):                                             # calcul de la safety value
+        data["type"] = type
         data["epsilon"] = epsilon
         data["mu"] = mu
         init = [0 for i in range(self.nb_state)]
@@ -290,7 +287,7 @@ class POMDP:
         while (abs(pnm-pnp) > epsilon):
             (actual_believes,pnm,pnp) = self.update(parents,children,lose_proba,winning_belief,actual_believes,n)
             n += 1
-            if frac:
+            if (data["type"] == Fraction):
                 if (len(bin(pnm.numerator))+len(bin(pnm.denominator)) >= 40):
                     print("         Computation of the safety value in progress, current estimation :",float(1-pnm))
                 else:

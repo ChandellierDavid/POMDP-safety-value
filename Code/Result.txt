@@ -1,12 +1,12 @@
 Safety value of test 1 : 1
 
-Safety value of test 2 : 1/2
+Safety value of test 2 : 8/17
 
 Safety value of test 3 : 0
 
 Safety value of test 4 : 1
 
-Safety value of test 5 : 235/8192
+Safety value of test 5 : 18405051958661937409/48661191875666868481
 
 Safety value of test 6 : 0
 
@@ -14,7 +14,7 @@ Safety value of test 7 : 1
 
 Safety value of test 8 : 0
 
-Safety value of test 9 : 41/81
+Safety value of test 9 : 533995/1067742
 
 Safety value of test 10 : 987/32768
 

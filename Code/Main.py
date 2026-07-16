@@ -37,11 +37,11 @@ if (representation == "q" or representation == "a"):
     print("Precision of the safety value (it has an enormous impact on the speed of the algorithm) (writen \"x y\" for x/y) : ", end = "")
     (x,y) = map(int,input().split())
     epsilon = Fraction(x,y)
-    frac = True
+    type = Fraction
 else:
     print("Precision of the safety value (it has an enormous impact on the speed of the algorithm): ", end = "")
     epsilon = float(input())
-    frac = False
+    type = float
 print("\n")
 
 if (do_example == "No" or do_example == "no"):
@@ -86,13 +86,13 @@ with open("Result.txt", "w") as result:
         print("Test",i+1,":", end = "\n\n")
 
         if (mu != -1):
-            pm = test.safety_value(epsilon/3,frac)
+            pm = test.safety_value(epsilon/3,type,mu = mu)
             if (len(bin(pm.numerator))+len(bin(pm.denominator)) >= 40):                                                                                                     # on ne veut pas que le nombre devienne illisible
                 print("     Safety value : calculated :",float(pm), ", pessimistic :",float(max(pm-epsilon,0)), ", optimistic :", float(min(pm+epsilon,1)), end = "\n\n")
             else:
                 print("     Safety value : calculated :",pm, ", pessimistic :",max(pm-epsilon,0), ", optimistic :", min(pm+epsilon,1), end = "\n\n")
         else:
-            pm = test.safety_value(epsilon/2,frac,mu = mu)
+            pm = test.safety_value(epsilon/2,type)
             if (representation == "q"):
                 if (len(bin(pm.numerator))+len(bin(pm.denominator)) >= 40):
                     print("     Safety value : calculated :",float(pm), ", pessimistic :",float(max(pm-epsilon,0)), ", optimistic :", float(min(pm+epsilon,1)), end = "\n\n")
