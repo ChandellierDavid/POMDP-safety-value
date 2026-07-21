@@ -81,7 +81,7 @@ with open("Result.txt", "w") as result:
                     mu = Fraction(1,int((log(3/epsilon)/((epsilon/3)*(p**n))))+1)
                 else:
                     if ((approx == "strong") or (approx == "Strong")):
-                        mu = Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p)**(2**n)))) + 1))                                # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
+                        mu = min(Fraction(1,int(Fraction(Fraction(log(3/epsilon)),(Fraction(Fraction(epsilon),3)*n*(Fraction(p,2)**(2**n)))) + 1)),Fraction(1,int(Fraction(n*(2**n),Fraction(p,2)**(2**n)))))                                # mu = (epsilon*(p**(2**n)))/log(1/epsilon) puis on prend la partie entière inférieure (j'ai écrit mu de cette façon pour ne l'avoir de la forme 1/k et ne pas avoir de mu = 0 ou des division par 0)
         
         print("Test",i+1,":", end = "\n\n")
 
